@@ -1,19 +1,19 @@
 
-name: Build medialab Recoding
+name: Build medialab Recoding for Windows
 
 on:
   workflow_dispatch:
   push:
-    branches: [main, master]
-    tags: ['v*']
-  pull_request:
-    branches: [main, master]
+    branches:
+      - main
+      - master
 
 permissions:
   contents: read
 
 jobs:
   build-windows:
+    name: Build Windows x64 EXE
     runs-on: windows-latest
     timeout-minutes: 30
 
@@ -21,24 +21,35 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build renderer and Windows portable app
+      - name: Build and package application
         run: npm run dist
 
-      - name: Upload portable executable
+      - name: Verify EXE was generated
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path "release" -Filter "*.exe" -File -ErrorAction SilentlyContinue
+
+          if (-not $exe) {
+            Write-Error "Build failed: No EXE found in the release directory."
+            exit 1
+          }
+
+          $exe | ForEach-Object {
+            Write-Host "Generated: $($_.FullName)"
+          }
+
+      - name: Upload Windows EXE
         uses: actions/upload-artifact@v4
         with:
           name: medialab-Recoding-Windows-x64
-          path: |
-            release/*.exe
-            dist/*.exe
+          path: release/*.exe
           if-no-files-found: error
           retention-days: 14
