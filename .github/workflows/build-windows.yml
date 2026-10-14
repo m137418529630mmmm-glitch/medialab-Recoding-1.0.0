@@ -1,0 +1,44 @@
+
+name: Build medialab Recoding
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build renderer and Windows portable app
+        run: npm run dist
+
+      - name: Upload portable executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: medialab-Recoding-Windows-x64
+          path: |
+            release/*.exe
+            dist/*.exe
+          if-no-files-found: error
+          retention-days: 14
